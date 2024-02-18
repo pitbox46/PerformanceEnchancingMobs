@@ -2,10 +2,12 @@ package github.pitbox46.performanceenhancedmobs.mixin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import github.pitbox46.performanceenhancedmobs.duck.BlockCollisionsDuck;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Nameable;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockCollisions;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.border.WorldBorder;
 import net.minecraft.world.level.entity.EntityAccess;
@@ -52,12 +54,14 @@ public abstract class EntityMixin extends net.minecraftforge.common.capabilities
     private static void collideBoundingBox(Entity pEntity, Vec3 pVec, AABB pCollisionBox, Level pLevel, List<VoxelShape> pPotentialHits, CallbackInfoReturnable<Vec3> cir) {
         Iterable<VoxelShape> shapes;
 
+        BlockCollisionsDuck<VoxelShape> blockCollisions = (BlockCollisionsDuck<VoxelShape>) new BlockCollisions<>(pLevel, pEntity, pCollisionBox.expandTowards(pVec), false, (p_286215_, p_286216_) -> p_286216_);
+
         WorldBorder worldborder = pLevel.getWorldBorder();
         boolean flag = pEntity != null && worldborder.isInsideCloseToBorder(pEntity, pCollisionBox.expandTowards(pVec));
         if (flag) {
-            shapes = Iterables.concat(pPotentialHits, List.of(worldborder.getCollisionShape()), pLevel.getBlockCollisions(pEntity, pCollisionBox.expandTowards(pVec)));
+            shapes = Iterables.concat(pPotentialHits, List.of(worldborder.getCollisionShape()), blockCollisions.performanceEnchancedMobs$computeList());
         } else {
-            shapes = Iterables.concat(pPotentialHits, pLevel.getBlockCollisions(pEntity, pCollisionBox.expandTowards(pVec)));
+            shapes = Iterables.concat(pPotentialHits, blockCollisions.performanceEnchancedMobs$computeList());
         }
 
         cir.setReturnValue(performanceEnhancedMobs$collideWithShapes(pVec, pCollisionBox, shapes));
