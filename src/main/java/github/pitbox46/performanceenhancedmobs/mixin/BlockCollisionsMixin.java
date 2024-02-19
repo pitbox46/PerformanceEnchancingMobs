@@ -9,10 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Cursor3D;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.BlockCollisions;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.CollisionGetter;
+import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -54,6 +51,7 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> implem
     @Shadow @Final private VoxelShape entityShape;
 
     @Unique
+    @Override
     public Iterable<T> performanceEnhancedMobs$computeList() {
         double halfway = box.minY + (box.maxY - box.minY) / 2;
 
@@ -78,10 +76,11 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> implem
         y2 = Mth.floor(box2.maxY + 1.0E-7D) + 1;
         Cursor3D cursor2 = new Cursor3D(x1, y1, z1, x2, y2, z2);
 
-        synchronized (chunkCache) {
-            for (int x = SectionPos.blockToSectionCoord(i); x <= SectionPos.blockToSectionCoord(j); x++) {
-                for (int z = SectionPos.blockToSectionCoord(i1); z <= SectionPos.blockToSectionCoord(j1); z++) {
-                    chunkCache.put(ChunkPos.asLong(x, z), getChunk(x, z));
+        for (int x = SectionPos.blockToSectionCoord(i); x <= SectionPos.blockToSectionCoord(j); x++) {
+            for (int z = SectionPos.blockToSectionCoord(i1); z <= SectionPos.blockToSectionCoord(j1); z++) {
+                BlockGetter blockGetter = getChunk(x, z);
+                chunkCache.put(ChunkPos.asLong(x, z), blockGetter == null ? EmptyBlockGetter.INSTANCE : blockGetter);
+                synchronized (chunkCache) {
                     chunkCache.notifyAll();
                 }
             }
@@ -102,46 +101,42 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> implem
     private List<T> performanceEnhancedMobs$getShapes(Cursor3D cursor, AABB pBox) {
         List<T> list = new ArrayList<>();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        while(true) {
-            if (cursor.advance()) {
-                int i = cursor.nextX();
-                int j = cursor.nextY();
-                int k = cursor.nextZ();
-                int l = cursor.getNextType();
-                if (l == 3) {
-                    continue;
-                }
-
-                BlockGetter blockgetter = this.getChunk(i, k);
-                if (blockgetter == null) {
-                    continue;
-                }
-
-                pos.set(i, j, k);
-                BlockState blockstate = blockgetter.getBlockState(pos);
-                if (this.onlySuffocatingBlocks && !blockstate.isSuffocating(blockgetter, pos) || l == 1 && !blockstate.hasLargeCollisionShape() || l == 2 && !blockstate.is(Blocks.MOVING_PISTON)) {
-                    continue;
-                }
-
-                VoxelShape voxelshape = blockstate.getCollisionShape(this.collisionGetter, pos, this.context);
-                if (voxelshape == Shapes.block()) {
-                    if (!pBox.intersects(i, j, k, i + 1.0D, j + 1.0D, k + 1.0D)) {
-                        continue;
-                    }
-
-                    list.add(this.resultProvider.apply(pos, voxelshape.move(i, j, k)));
-                    continue;
-                }
-
-                VoxelShape voxelshape1 = voxelshape.move(i, j, k);
-                if (voxelshape1.isEmpty() || !Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND)) {
-                    continue;
-                }
-
-                list.add(this.resultProvider.apply(pos, voxelshape1));
+        while(cursor.advance()) {
+            int i = cursor.nextX();
+            int j = cursor.nextY();
+            int k = cursor.nextZ();
+            int l = cursor.getNextType();
+            if (l==3) {
                 continue;
             }
-            break;
+
+            BlockGetter blockgetter = this.performanceEnhancedMobs$getCachedChunk(i, k);
+            if (blockgetter==null || blockgetter==EmptyBlockGetter.INSTANCE) {
+                continue;
+            }
+
+            pos.set(i, j, k);
+            BlockState blockstate = blockgetter.getBlockState(pos);
+            if (this.onlySuffocatingBlocks && !blockstate.isSuffocating(blockgetter, pos) || l==1 && !blockstate.hasLargeCollisionShape() || l==2 && !blockstate.is(Blocks.MOVING_PISTON)) {
+                continue;
+            }
+
+            VoxelShape voxelshape = blockstate.getCollisionShape(this.collisionGetter, pos, this.context);
+            if (voxelshape==Shapes.block()) {
+                if (!pBox.intersects(i, j, k, i + 1.0D, j + 1.0D, k + 1.0D)) {
+                    continue;
+                }
+
+                list.add(this.resultProvider.apply(pos, voxelshape.move(i, j, k)));
+                continue;
+            }
+
+            VoxelShape voxelshape1 = voxelshape.move(i, j, k);
+            if (voxelshape1.isEmpty() || !Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND)) {
+                continue;
+            }
+
+            list.add(this.resultProvider.apply(pos, voxelshape1));
         }
         return list;
     }
@@ -149,8 +144,8 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> implem
     @Unique
     private BlockGetter performanceEnhancedMobs$getCachedChunk(int blockX, int blockZ) {
         long k = ChunkPos.asLong(SectionPos.blockToSectionCoord(blockX), SectionPos.blockToSectionCoord(blockZ));
-        synchronized (chunkCache) {
-            while (!chunkCache.containsKey(k)) {
+        while (!chunkCache.containsKey(k)) {
+            synchronized (chunkCache) {
                 try {
                     chunkCache.wait();
                 } catch (InterruptedException e) {
