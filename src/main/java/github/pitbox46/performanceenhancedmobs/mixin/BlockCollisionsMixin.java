@@ -53,6 +53,7 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> {
     }
 
     /**
+     * Provides a minimal performance increase. May be higher for areas with complex voxelshapes
      * @author pitbox46
      * @reason More performant than using a redirect and an Injection is not feasible due to no implementation for *continue*
      */

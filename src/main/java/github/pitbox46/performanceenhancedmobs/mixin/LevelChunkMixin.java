@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LevelChunk.class)
 public abstract class LevelChunkMixin extends ChunkAccess implements net.minecraftforge.common.capabilities.ICapabilityProviderImpl<LevelChunk>, LevelChunkDuck {
     @Unique
-    private CacheMap<BlockCollisionCacheKey, Boolean> performanceEnhancedMobs$collisionsCacheMap = new CacheMap<>(512);
+    private final CacheMap<BlockCollisionCacheKey, Boolean> performanceEnhancedMobs$collisionsCacheMap = new CacheMap<>(512);
 
     public LevelChunkMixin(ChunkPos pChunkPos, UpgradeData pUpgradeData, LevelHeightAccessor pLevelHeightAccessor, Registry<Biome> pBiomeRegistry, long pInhabitedTime, @Nullable LevelChunkSection[] pSections, @Nullable BlendingData pBlendingData) {
         super(pChunkPos, pUpgradeData, pLevelHeightAccessor, pBiomeRegistry, pInhabitedTime, pSections, pBlendingData);
