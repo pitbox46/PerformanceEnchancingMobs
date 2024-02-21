@@ -6,7 +6,8 @@
   "refmap": "PerformanceEnhancedMobs.refmap.json",
   "mixins": [
     "BlockCollisionsMixin",
-    "EntityMixin"
+    "EntityMixin",
+    "LevelMixin"
   ],
   "client": [
   ],

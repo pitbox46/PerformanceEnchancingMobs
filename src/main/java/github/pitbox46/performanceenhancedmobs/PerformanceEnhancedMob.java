@@ -14,6 +14,5 @@ public class PerformanceEnhancedMob {
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public PerformanceEnhancedMob() {
-    }
+    public PerformanceEnhancedMob() {}
 }
