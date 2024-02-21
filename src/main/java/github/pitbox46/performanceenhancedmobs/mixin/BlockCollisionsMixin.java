@@ -58,63 +58,60 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> {
      */
     @Overwrite
     protected T computeNext() {
-        while(true) {
-            if (this.cursor.advance()) {
-                int i = this.cursor.nextX();
-                int j = this.cursor.nextY();
-                int k = this.cursor.nextZ();
-                int l = this.cursor.getNextType();
-                if (l == 3) {
-                    continue;
-                }
+        while (this.cursor.advance()) {
+            int l = this.cursor.getNextType();
+            if (l==3) {
+                continue;
+            }
+            int i = this.cursor.nextX();
+            int j = this.cursor.nextY();
+            int k = this.cursor.nextZ();
 
-                BlockGetter blockgetter = this.getChunk(i, k);
-                if (blockgetter == null) {
-                    continue;
-                }
-
-                this.pos.set(i, j, k);
-                BlockState blockstate = blockgetter.getBlockState(this.pos);
-                if (this.onlySuffocatingBlocks && !blockstate.isSuffocating(blockgetter, this.pos) || l == 1 && !blockstate.hasLargeCollisionShape() || l == 2 && !blockstate.is(Blocks.MOVING_PISTON)) {
-                    continue;
-                }
-
-                VoxelShape voxelshape = blockstate.getCollisionShape(this.collisionGetter, this.pos, this.context);
-                if (voxelshape == Shapes.block()) {
-                    if (!this.box.intersects(i, j, k, i + 1.0D, j + 1.0D, k + 1.0D)) {
-                        continue;
-                    }
-
-                    return this.resultProvider.apply(this.pos, voxelshape.move(i, j, k));
-                }
-
-                VoxelShape voxelshape1 = voxelshape.move(i, j, k);
-
-                if (voxelshape1.isEmpty()) {
-                    continue;
-                }
-
-                boolean flag;
-                if (blockgetter instanceof LevelChunkDuck duck) {
-                    var cache = duck.performanceEnhancedMobs$getBlockCollisionCacheMap();
-                    BlockCollisionCacheKey currentKey = new BlockCollisionCacheKey(i, j, k, performanceEnhancedMobs$entityID, box);
-                    if (!cache.containsKey(currentKey)) {
-                        cache.put(currentKey, Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND));
-                        PerformanceEnhancedMob.notCached++;
-                    }
-                    PerformanceEnhancedMob.total++;
-                    flag = cache.get(currentKey);
-                } else {
-                    flag = Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND);
-                }
-                if (!flag) {
-                    continue;
-                }
-
-                return this.resultProvider.apply(this.pos, voxelshape1);
+            BlockGetter blockgetter = this.getChunk(i, k);
+            if (blockgetter==null) {
+                continue;
             }
 
-            return this.endOfData();
+            this.pos.set(i, j, k);
+            BlockState blockstate = blockgetter.getBlockState(this.pos);
+            if (this.onlySuffocatingBlocks && !blockstate.isSuffocating(blockgetter, this.pos) || l==1 && !blockstate.hasLargeCollisionShape() || l==2 && !blockstate.is(Blocks.MOVING_PISTON)) {
+                continue;
+            }
+
+            VoxelShape voxelshape = blockstate.getCollisionShape(this.collisionGetter, this.pos, this.context);
+            if (voxelshape==Shapes.block()) {
+                if (!this.box.intersects(i, j, k, i + 1.0D, j + 1.0D, k + 1.0D)) {
+                    continue;
+                }
+
+                return this.resultProvider.apply(this.pos, voxelshape.move(i, j, k));
+            }
+            if (voxelshape.isEmpty()) {
+                continue;
+            }
+
+            VoxelShape voxelshape1 = voxelshape.move(i, j, k);
+
+            boolean flag;
+            if (blockgetter instanceof LevelChunkDuck duck) {
+                var cache = duck.performanceEnhancedMobs$getBlockCollisionCacheMap();
+                BlockCollisionCacheKey currentKey = new BlockCollisionCacheKey(i, j, k, performanceEnhancedMobs$entityID, box);
+                if (!cache.containsKey(currentKey)) {
+                    cache.put(currentKey, Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND));
+                    PerformanceEnhancedMob.notCached++;
+                }
+                PerformanceEnhancedMob.total++;
+                flag = cache.get(currentKey);
+            } else {
+                flag = Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND);
+            }
+            if (!flag) {
+                continue;
+            }
+
+            return this.resultProvider.apply(this.pos, voxelshape1);
         }
+
+        return this.endOfData();
     }
 }
