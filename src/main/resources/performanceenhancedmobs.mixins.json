@@ -3,10 +3,11 @@
   "minVersion": "0.8",
   "package": "github.pitbox46.performanceenhancedmobs.mixin",
   "compatibilityLevel": "JAVA_8",
-  "refmap": "PerformanceEnhancedMobs.refmap.json",
+  "refmap": "performanceenhancedmobs.refmap.json",
   "mixins": [
     "BlockCollisionsMixin",
-    "EntityMixin"
+    "EntityMixin",
+    "LevelChunkMixin"
   ],
   "client": [
   ],
