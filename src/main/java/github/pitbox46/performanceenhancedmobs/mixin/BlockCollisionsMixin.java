@@ -1,10 +1,12 @@
 package github.pitbox46.performanceenhancedmobs.mixin;
 
 import com.google.common.collect.AbstractIterator;
-import github.pitbox46.performanceenhancedmobs.duck.LevelDuck;
-import it.unimi.dsi.fastutil.Pair;
+import github.pitbox46.performanceenhancedmobs.PerformanceEnhancedMob;
+import github.pitbox46.performanceenhancedmobs.duck.LevelChunkDuck;
+import github.pitbox46.performanceenhancedmobs.misc.BlockCollisionCacheKey;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Cursor3D;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockCollisions;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.CollisionGetter;
@@ -16,12 +18,17 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 
 @Mixin(BlockCollisions.class)
 public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> {
+    @Unique private int performanceEnhancedMobs$entityID;
+
     @Shadow @Final private CollisionGetter collisionGetter;
 
     @Shadow @Final private VoxelShape entityShape;
@@ -39,6 +46,11 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> {
     @Shadow @Final private AABB box;
 
     @Shadow @Final private BiFunction<BlockPos.MutableBlockPos, VoxelShape, T> resultProvider;
+
+    @Inject(at = @At(value = "RETURN"), method = "<init>")
+    private void afterConstructor(CollisionGetter pCollisionGetter, Entity pEntity, AABB pBox, boolean pOnlySuffocatingBlocks, BiFunction pResultProvider, CallbackInfo ci) {
+        performanceEnhancedMobs$entityID = pEntity == null ? Integer.MIN_VALUE : pEntity.getId();
+    }
 
     /**
      * @author pitbox46
@@ -83,13 +95,15 @@ public abstract class BlockCollisionsMixin<T> extends AbstractIterator<T> {
                 }
 
                 boolean flag;
-                if (collisionGetter instanceof LevelDuck duck) {
-                    var cacheMap = duck.performanceEnhancedMobs$getBlockCollisionCacheMap();
-                    Pair<VoxelShape, VoxelShape> pair = Pair.of(voxelshape1, this.entityShape);
-                    if (!cacheMap.containsKey(pair)) {
-                        cacheMap.put(pair, Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND));
+                if (blockgetter instanceof LevelChunkDuck duck) {
+                    var cache = duck.performanceEnhancedMobs$getBlockCollisionCacheMap();
+                    BlockCollisionCacheKey currentKey = new BlockCollisionCacheKey(i, j, k, performanceEnhancedMobs$entityID, box);
+                    if (!cache.containsKey(currentKey)) {
+                        cache.put(currentKey, Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND));
+                        PerformanceEnhancedMob.notCached++;
                     }
-                    flag = cacheMap.get(pair);
+                    PerformanceEnhancedMob.total++;
+                    flag = cache.get(currentKey);
                 } else {
                     flag = Shapes.joinIsNotEmpty(voxelshape1, this.entityShape, BooleanOp.AND);
                 }

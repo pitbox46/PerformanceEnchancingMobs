@@ -7,7 +7,7 @@
   "mixins": [
     "BlockCollisionsMixin",
     "EntityMixin",
-    "LevelMixin"
+    "LevelChunkMixin"
   ],
   "client": [
   ],

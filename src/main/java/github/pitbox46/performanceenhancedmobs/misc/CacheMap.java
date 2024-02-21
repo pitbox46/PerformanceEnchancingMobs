@@ -3,6 +3,11 @@ package github.pitbox46.performanceenhancedmobs.misc;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * NOT THREAD SAFE
+ * @param <K>
+ * @param <V>
+ */
 public class CacheMap<K,V> extends LinkedHashMap<K, V> {
     /**
      * If there are more entries than this number, the oldest accessed entries will be deleted until capacity is reached
