@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Unique;
 @Mixin(Level.class)
 public class LevelMixin implements LevelDuck {
     @Unique
-    private final CacheMap<Pair<VoxelShape, VoxelShape>, Boolean> performanceEnhancedMobs$collisionsCacheMap = new CacheMap<>(512);
+    private final CacheMap<Pair<VoxelShape, VoxelShape>, Boolean> performanceEnhancedMobs$collisionsCacheMap = new CacheMap<>(1024);
     
     @Override
     public CacheMap<Pair<VoxelShape, VoxelShape>, Boolean> performanceEnhancedMobs$getBlockCollisionCacheMap() {
